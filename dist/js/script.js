@@ -272,21 +272,10 @@ window.addEventListener('DOMContentLoaded', function () {
     failure: 'Что-то пошло не так...'
   };
   forms.forEach(item => {
-    bindPostData(item);
+    postData(item);
   });
 
-  const postData = async (url, data) => {
-    const result = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: data
-    });
-    return await result.json();
-  };
-
-  function bindPostData(form) {
+  function postData(form) {
     form.addEventListener('submit', e => {
       e.preventDefault();
       let statusMessage = document.createElement('img');
@@ -296,18 +285,25 @@ window.addEventListener('DOMContentLoaded', function () {
                 margin: 0 auto;
             `;
       form.insertAdjacentElement('afterend', statusMessage);
+      const request = new XMLHttpRequest();
+      request.open('POST', 'server.php');
+      request.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+      const formData = new FormData(form);
       const object = {};
       formData.forEach(function (value, key) {
         object[key] = value;
       });
-      postData('server.php', JSON.stringify(object)).then(data => data.text()).then(data => {
-        console.log(data);
-        showThanksModal(message.success);
-        statusMessage.remove();
-      }).catch(() => {
-        showThanksModal(message.failure);
-      }).finally(() => {
-        form.reset();
+      const json = JSON.stringify(object);
+      request.send(json);
+      request.addEventListener('load', () => {
+        if (request.status === 200) {
+          console.log(request.response);
+          showThanksModal(message.success);
+          statusMessage.remove();
+          form.reset();
+        } else {
+          showThanksModal(message.failure);
+        }
       });
     });
   }
@@ -331,9 +327,52 @@ window.addEventListener('DOMContentLoaded', function () {
       prevModalDialog.classList.remove('hide');
       closeModal();
     }, 4000);
+  } // Slider
+
+
+  let slideIndex = 1;
+  const slides = document.querySelectorAll('.offer__slide'),
+        prev = document.querySelector('.offer__slider-prev'),
+        next = document.querySelector('.offer__slider-next'),
+        total = document.querySelector('#total'),
+        current = document.querySelector('#current');
+  showSlides(slideIndex);
+
+  if (slides.length < 10) {
+    total.textContent = `0${slides.length}`;
+  } else {
+    total.textContent = slides.length;
   }
 
-  fetch('http://localhost:3000/menu').then(data => data.json()).then(res => console.log(res));
+  function showSlides(n) {
+    if (n > slides.length) {
+      slideIndex = 1;
+    }
+
+    if (n < 1) {
+      slideIndex = slides.length;
+    }
+
+    slides.forEach(item => item.style.display = 'none');
+    slides[slideIndex - 1].style.display = 'block'; // Как ваша самостоятельная работа - переписать на использование классов show/hide
+
+    if (slides.length < 10) {
+      current.textContent = `0${slideIndex}`;
+    } else {
+      current.textContent = slideIndex;
+    }
+  }
+
+  function plusSlides(n) {
+    showSlides(slideIndex += n);
+  }
+
+  prev.addEventListener('click', function () {
+    plusSlides(-1);
+  });
+  next.addEventListener('click', function () {
+    plusSlides(1);
+  });
 });
 
 /***/ })
